@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homebase — Internal Developer Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0F1117; --surface:#161B27; --raised:#1E2538; --card:#232B3E;
+  --border:rgba(255,255,255,0.07); --border-hi:rgba(96,165,250,0.3);
+  --green:#34D399; --green-dim:rgba(52,211,153,0.1);
+  --red:#F87171; --red-dim:rgba(248,113,113,0.1);
+  --amber:#FBBF24; --amber-dim:rgba(251,191,36,0.1);
+  --blue:#60A5FA; --blue-dim:rgba(96,165,250,0.1);
+  --purple:#A78BFA; --purple-dim:rgba(167,139,250,0.1);
+  --text:#E2E8F0; --text-mid:#94A3B8; --text-dim:#64748B;
+  --mono:'JetBrains Mono',monospace; --sans:'Inter',system-ui,sans-serif;
+  --r:8px; --r-lg:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:13px;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;overflow:hidden;}
+
+/* TOPBAR */
+.topbar{height:48px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;}
+.logo{font-size:14px;font-weight:700;color:white;display:flex;align-items:center;gap:8px;}
+.logo-mark{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#F97316,#EF4444);display:flex;align-items:center;justify-content:center;font-size:12px;}
+.topbar-nav{display:flex;gap:2px;margin-left:16px;}
+.tnav{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;color:var(--text-mid);cursor:pointer;background:none;border:none;transition:all 0.15s;font-family:var(--sans);}
+.tnav:hover{color:var(--text);}
+.tnav.active{background:rgba(255,255,255,0.07);color:white;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.env-select{background:var(--raised);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:11px;font-family:var(--sans);cursor:pointer;outline:none;}
+.env-select option{background:var(--surface);}
+.oncall-badge{font-family:var(--mono);font-size:10px;background:var(--green-dim);color:var(--green);border:1px solid rgba(52,211,153,0.25);padding:3px 8px;border-radius:4px;letter-spacing:0.05em;cursor:pointer;}
+
+/* LAYOUT */
+.main{flex:1;display:flex;overflow:hidden;}
+.sidebar{width:200px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sidebar-label{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;padding:8px 8px 4px;margin-top:6px;}
+.sidebar-label:first-child{margin-top:0;}
+.slink{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:500;color:var(--text-mid);transition:all 0.12s;}
+.slink:hover{background:var(--raised);color:var(--text);}
+.slink.active{background:var(--blue-dim);color:var(--blue);}
+.slink-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.slink-badge{margin-left:auto;font-family:var(--mono);font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;}
+
+/* CONTENT AREA */
+.content-wrap{flex:1;display:flex;overflow:hidden;}
+.content{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;}
+
+/* SERVICE DETAIL PANEL */
+.detail-panel{width:340px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;transition:width 0.25s;}
+.detail-panel.collapsed{width:0;border-left:none;}
+.detail-header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.detail-title{font-size:13px;font-weight:700;color:white;}
+.detail-close{width:24px;height:24px;border-radius:5px;background:var(--raised);border:1px solid var(--border);color:var(--text-mid);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.detail-close:hover{border-color:var(--red);color:var(--red);}
+.detail-body{flex:1;overflow-y:auto;padding:14px 16px;}
+
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;transition:border-color 0.15s;cursor:default;}
+.stat-card:hover{border-color:var(--border-hi);}
+.stat-label{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;}
+.stat-val{font-family:var(--mono);font-size:26px;font-weight:500;line-height:1;margin-bottom:4px;}
+.stat-sub{font-size:10px;color:var(--text-dim);}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.grid-3{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;}
+
+/* PANEL */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;}
+.panel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.panel-title{font-size:13px;font-weight:600;color:white;}
+.panel-meta{font-size:11px;color:var(--text-dim);font-family:var(--mono);}
+.panel-body{padding:12px 16px;}
+
+/* PIPELINE */
+.pipeline-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r);background:var(--raised);border:1px solid var(--border);margin-bottom:7px;cursor:pointer;transition:border-color 0.15s;}
+.pipeline-row:hover{border-color:var(--border-hi);}
+.pipeline-row:last-child{margin-bottom:0;}
+.pipe-status{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.pipe-name{font-size:12px;font-weight:600;flex:1;}
+.pipe-branch{font-family:var(--mono);font-size:10px;color:var(--text-dim);}
+.pipe-steps{display:flex;gap:3px;}
+.pipe-step{width:18px;height:4px;border-radius:2px;}
+.pipe-duration{font-family:var(--mono);font-size:10px;color:var(--text-dim);min-width:40px;text-align:right;}
+.pipe-badge{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;letter-spacing:0.04em;flex-shrink:0;}
+
+/* SERVICE ROWS */
+.service-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s;border-radius:var(--r);padding:9px 8px;margin:0 -8px;}
+.service-row:hover{background:var(--raised);}
+.service-row:last-child{border-bottom:none;}
+.svc-sparkline{display:flex;align-items:flex-end;gap:1.5px;width:44px;height:18px;flex-shrink:0;}
+.spark{flex:1;border-radius:1px;}
+.svc-name{font-size:12px;font-weight:600;flex:1;}
+.svc-owner{font-size:10px;color:var(--text-dim);}
+.svc-uptime{font-family:var(--mono);font-size:11px;font-weight:500;min-width:52px;text-align:right;}
+.svc-latency{font-family:var(--mono);font-size:11px;color:var(--text-mid);min-width:52px;text-align:right;}
+
+/* INCIDENTS */
+.incident-row{padding:10px;border-radius:var(--r);background:var(--raised);border:1px solid var(--border);margin-bottom:8px;}
+.incident-row:last-child{margin-bottom:0;}
+.inc-header{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.inc-sev{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:0.06em;flex-shrink:0;}
+.inc-title{font-size:12px;font-weight:600;flex:1;}
+.inc-time{font-family:var(--mono);font-size:10px;color:var(--text-dim);}
+.inc-body{font-size:11px;color:var(--text-mid);line-height:1.5;margin-bottom:8px;}
+.inc-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.inc-btn{font-size:11px;font-weight:500;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:none;color:var(--text-mid);cursor:pointer;transition:all 0.15s;font-family:var(--sans);}
+.inc-btn:hover{border-color:var(--blue);color:var(--blue);}
+.inc-btn.primary{background:var(--blue-dim);border-color:rgba(96,165,250,0.3);color:var(--blue);}
+.inc-btn.danger{background:var(--red-dim);border-color:rgba(248,113,113,0.3);color:var(--red);}
+.inc-btn.success{background:var(--green-dim);border-color:rgba(52,211,153,0.3);color:var(--green);}
+
+/* DEPLOY BUTTON */
+.deploy-btn{padding:7px 16px;border-radius:var(--r);background:var(--blue);color:#0F1117;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s;font-family:var(--sans);display:flex;align-items:center;gap:6px;}
+.deploy-btn:hover{background:#93C5FD;transform:translateY(-1px);}
+.deploy-btn.deploying{background:var(--amber);color:#0F1117;cursor:default;}
+.deploy-btn.failed{background:var(--red);color:white;}
+.deploy-btn.success-deploy{background:var(--green);color:#0F1117;}
+
+/* ROLLOUT PROGRESS */
+.rollout-wrap{background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-top:10px;}
+.rollout-title{font-size:11px;font-weight:600;color:white;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.rollout-stage{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px;}
+.rollout-stage:last-child{margin-bottom:0;}
+.rollout-icon{width:18px;text-align:center;font-size:12px;flex-shrink:0;}
+.rollout-label{flex:1;color:var(--text-mid);}
+.rollout-status{font-family:var(--mono);font-size:10px;}
+.rollout-bar-wrap{width:80px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.rollout-bar-fill{height:100%;border-radius:2px;background:var(--blue);transition:width 0.5s ease;}
+
+/* AWS COST */
+.cost-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.cost-row:last-child{border-bottom:none;}
+.cost-service{font-size:12px;font-weight:500;flex:1;}
+.cost-bar-wrap{width:80px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.cost-bar-fill{height:100%;border-radius:2px;}
+.cost-val{font-family:var(--mono);font-size:11px;font-weight:600;min-width:50px;text-align:right;}
+.cost-change{font-family:var(--mono);font-size:10px;min-width:36px;text-align:right;}
+
+/* SLO */
+.slo-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.slo-row:last-child{border-bottom:none;}
+.slo-name{font-size:12px;font-weight:500;flex:1;}
+.slo-track{flex:1;height:6px;background:var(--raised);border-radius:3px;overflow:hidden;position:relative;}
+.slo-fill{height:100%;border-radius:3px;transition:width 0.6s ease;}
+.slo-target{position:absolute;right:0;top:0;bottom:0;width:2px;background:rgba(255,255,255,0.2);}
+.slo-val{font-family:var(--mono);font-size:11px;font-weight:600;min-width:44px;text-align:right;}
+.slo-badge{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;letter-spacing:0.04em;}
+
+/* DEPLOY LOG */
+.deploy-entry{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.deploy-entry:last-child{border-bottom:none;}
+.deploy-icon{font-size:13px;flex-shrink:0;}
+.deploy-service{font-weight:600;color:var(--text);}
+.deploy-detail{color:var(--text-dim);font-family:var(--mono);font-size:10px;margin-top:1px;}
+.deploy-who{font-size:10px;color:var(--text-dim);}
+.deploy-time{font-family:var(--mono);font-size:10px;color:var(--text-dim);flex-shrink:0;}
+
+/* ON-CALL */
+.oncall-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.oncall-row:last-child{border-bottom:none;}
+.oncall-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0;}
+.oncall-name{font-size:12px;font-weight:500;flex:1;}
+.oncall-team{font-size:10px;color:var(--text-dim);}
+.oncall-shift{font-family:var(--mono);font-size:10px;color:var(--text-dim);}
+
+/* DETAIL PANEL CONTENT */
+.dp-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.dp-section:last-child{border-bottom:none;margin-bottom:0;}
+.dp-label{font-size:10px;font-weight:600;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;}
+.dp-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.dp-kpi{background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:10px;}
+.dp-kpi-label{font-size:10px;color:var(--text-dim);margin-bottom:3px;}
+.dp-kpi-val{font-family:var(--mono);font-size:18px;font-weight:600;line-height:1;}
+.dp-mini-chart{height:48px;display:flex;align-items:flex-end;gap:2px;background:var(--raised);border:1px solid var(--border);border-radius:var(--r);padding:6px;}
+.dp-bar{flex:1;border-radius:1px 1px 0 0;}
+.dp-env-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11px;}
+.dp-env-label{font-family:var(--mono);font-size:10px;width:80px;color:var(--text-dim);}
+.dp-env-status{font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 6px;border-radius:3px;}
+
+/* TOAST */
+.toast-container{position:fixed;bottom:40px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--card);border:1px solid var(--border-hi);border-radius:var(--r-lg);padding:12px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5);font-size:12px;max-width:300px;transform:translateX(120%);transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+.toast.show{transform:translateX(0);}
+.toast-icon{font-size:16px;flex-shrink:0;}
+
+/* STATUSBAR */
+.statusbar{height:26px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:20px;flex-shrink:0;}
+.sb{font-family:var(--mono);font-size:10px;color:var(--text-dim);display:flex;align-items:center;gap:5px;}
+.sb-dot{width:5px;height:5px;border-radius:50%;}
+.pulse{animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* DEMO NOTE */
+.demo-note{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);background:var(--raised);border:1px solid var(--border-hi);border-radius:20px;padding:7px 16px;font-size:11px;color:var(--text-dim);z-index:100;white-space:nowrap;pointer-events:none;}
+.demo-note strong{color:var(--blue);}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.anim-in{animation:fadeUp 0.3s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo"><div class="logo-mark">🏠</div>Homebase IDP</div>
+  <div class="topbar-nav">
+    <button class="tnav active" onclick="switchTab('overview',this)">Overview</button>
+    <button class="tnav" onclick="switchTab('services',this)">Services</button>
+    <button class="tnav" onclick="switchTab('pipelines',this)">Pipelines</button>
+    <button class="tnav" onclick="switchTab('incidents',this)">Incidents</button>
+    <button class="tnav" onclick="switchTab('costs',this)">AWS Costs</button>
+  </div>
+  <div class="topbar-right">
+    <select class="env-select"><option>Production</option><option>Staging</option><option>Development</option></select>
+    <div class="oncall-badge" onclick="showToast('📟','Paging @sarah.k — SEV-2 active')">ON-CALL: @sarah.k</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-label">Platform</div>
+    <div class="slink active" onclick="switchSidebar(this,'overview')"><div class="slink-dot" style="background:var(--blue)"></div>Overview</div>
+    <div class="slink" onclick="switchSidebar(this,'services')"><div class="slink-dot" style="background:var(--green)"></div>Service Health</div>
+    <div class="slink" onclick="switchSidebar(this,'pipelines')"><div class="slink-dot" style="background:var(--purple)"></div>CI/CD Pipelines</div>
+    <div class="slink" onclick="switchSidebar(this,'incidents')"><div class="slink-dot" style="background:var(--amber)"></div>Deployments</div>
+
+    <div class="sidebar-label">Observability</div>
+    <div class="slink" onclick="switchSidebar(this,'slo')"><div class="slink-dot" style="background:var(--text-dim)"></div>SLO Dashboard</div>
+    <div class="slink" onclick="showToast('📊','Opening Datadog — metrics dashboard')"><div class="slink-dot" style="background:var(--text-dim)"></div>Metrics</div>
+    <div class="slink" onclick="showToast('📋','Opening log aggregation — last 1h')"><div class="slink-dot" style="background:var(--text-dim)"></div>Logs</div>
+    <div class="slink"><div class="slink-dot" style="background:var(--red)"></div>Alerts <span class="slink-badge" style="background:var(--red-dim);color:var(--red)">3</span></div>
+
+    <div class="sidebar-label">Infra</div>
+    <div class="slink" onclick="switchSidebar(this,'costs')"><div class="slink-dot" style="background:var(--text-dim)"></div>AWS Costs</div>
+    <div class="slink" onclick="showToast('🔧','Fetching Terraform state — 847 resources')"><div class="slink-dot" style="background:var(--text-dim)"></div>Terraform State</div>
+    <div class="slink" onclick="showToast('🔒','Opening IAM policy analyzer')"><div class="slink-dot" style="background:var(--text-dim)"></div>IAM Policies</div>
+
+    <div class="sidebar-label">On-Call</div>
+    <div class="slink" onclick="switchSidebar(this,'oncall')"><div class="slink-dot" style="background:var(--text-dim)"></div>Schedule</div>
+    <div class="slink" onclick="showToast('📖','Opening runbook library — 42 runbooks')"><div class="slink-dot" style="background:var(--text-dim)"></div>Runbooks</div>
+    <div class="slink" onclick="showToast('📝','Opening post-mortem tracker')"><div class="slink-dot" style="background:var(--text-dim)"></div>Post-mortems</div>
+  </div>
+
+  <div class="content-wrap">
+    <div class="content" id="mainContent"></div>
+    <div class="detail-panel collapsed" id="detailPanel">
+      <div class="detail-header">
+        <div class="detail-title" id="detailTitle">Service Detail</div>
+        <button class="detail-close" onclick="closeDetail()">✕</button>
+      </div>
+      <div class="detail-body" id="detailBody"></div>
+    </div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <div class="sb"><div class="sb-dot pulse" style="background:var(--green)"></div>All systems monitored</div>
+  <div class="sb" id="sbServices">24 services</div>
+  <div class="sb">AWS us-east-1 · ca-central-1</div>
+  <div class="sb" style="margin-left:auto">Terraform 1.7.2 · Built by Jaivik Parekh</div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<div class="demo-note">Built for <strong>Homebase</strong> by <strong>Jaivik Parekh</strong> · jaivikparekh@gmail.com</div>
+
+<script>
+/* ═══════════════════════ DATA ═══════════════════════ */
+const SERVICES = [
+  {id:'api-gateway',name:'api-gateway',owner:'@platform',lang:'Ruby',uptime:'99.98%',latency:'84ms',latencyMs:84,status:'healthy',spark:[80,84,82,86,83,85,82,87,84,85,86,84],envs:{prod:'healthy',staging:'healthy',dev:'healthy'},deployFreq:8,errorRate:'0.02%',p99:'210ms'},
+  {id:'scheduling-svc',name:'scheduling-svc',owner:'@core',lang:'Ruby',uptime:'99.71%',latency:'2.8s',latencyMs:2800,status:'degraded',spark:[180,200,240,320,480,900,1400,2100,2600,2800,2800,2800],envs:{prod:'degraded',staging:'healthy',dev:'healthy'},deployFreq:3,errorRate:'1.8%',p99:'4.2s'},
+  {id:'auth-service',name:'auth-service',owner:'@infra',lang:'Go',uptime:'100%',latency:'12ms',latencyMs:12,status:'healthy',spark:[11,12,11,13,12,11,12,12,11,12,12,12],envs:{prod:'healthy',staging:'healthy',dev:'healthy'},deployFreq:12,errorRate:'0.00%',p99:'28ms'},
+  {id:'payroll-worker',name:'payroll-worker',owner:'@core',lang:'Ruby',uptime:'99.94%',latency:'310ms',latencyMs:310,status:'healthy',spark:[290,310,300,320,280,310,290,300,310,320,300,310],envs:{prod:'healthy',staging:'healthy',dev:'degraded'},deployFreq:5,errorRate:'0.06%',p99:'620ms'},
+  {id:'time-tracking-api',name:'time-tracking-api',owner:'@mobile',lang:'Go',uptime:'99.99%',latency:'22ms',latencyMs:22,status:'healthy',spark:[20,22,21,23,22,21,22,23,21,22,22,22],envs:{prod:'healthy',staging:'healthy',dev:'healthy'},deployFreq:14,errorRate:'0.01%',p99:'48ms'},
+  {id:'notification-svc',name:'notification-svc',owner:'@growth',lang:'Ruby',uptime:'99.96%',latency:'145ms',latencyMs:145,status:'healthy',spark:[140,145,138,150,144,148,142,146,144,147,145,145],envs:{prod:'healthy',staging:'healthy',dev:'healthy'},deployFreq:6,errorRate:'0.04%',p99:'290ms'},
+  {id:'team-comm-api',name:'team-comm-api',owner:'@growth',lang:'Ruby',uptime:'99.92%',latency:'188ms',latencyMs:188,status:'healthy',spark:[180,185,190,188,192,186,188,184,190,188,186,188],envs:{prod:'healthy',staging:'degraded',dev:'healthy'},deployFreq:4,errorRate:'0.08%',p99:'380ms'},
+  {id:'hr-onboarding',name:'hr-onboarding',owner:'@platform',lang:'Ruby',uptime:'99.89%',latency:'240ms',latencyMs:240,status:'healthy',spark:[230,240,238,245,242,238,240,244,241,240,238,240],envs:{prod:'healthy',staging:'healthy',dev:'healthy'},deployFreq:2,errorRate:'0.11%',p99:'480ms'},
+];
+
+const PIPELINES = [
+  {name:'api-gateway',branch:'main · #1842',steps:[1,1,1,1],duration:'3m 44s',status:'passed',badge:'PASSED',bc:'var(--green-dim)',tc:'var(--green)'},
+  {name:'scheduling-svc',branch:'feat/shift-overlap · #934',steps:[1,1,0,null],duration:'6m 21s',status:'failed',badge:'FAILED',bc:'var(--red-dim)',tc:'var(--red)'},
+  {name:'auth-service',branch:'main · #2103',steps:[1,0.5,null,null],duration:'2m 33s…',status:'running',badge:'RUNNING',bc:'var(--amber-dim)',tc:'var(--amber)'},
+  {name:'payroll-worker',branch:'main · #411',steps:[1,1,1,1],duration:'5m 08s',status:'passed',badge:'PASSED',bc:'var(--green-dim)',tc:'var(--green)'},
+  {name:'time-tracking-api',branch:'main · #788',steps:[1,1,1,1],duration:'4m 02s',status:'passed',badge:'PASSED',bc:'var(--green-dim)',tc:'var(--green)'},
+  {name:'team-comm-api',branch:'fix/push-notif · #312',steps:[1,1,1,1],duration:'3m 19s',status:'passed',badge:'PASSED',bc:'var(--green-dim)',tc:'var(--green)'},
+];
+
+const AWS_COSTS = [
+  {name:'ECS / Fargate',cost:4820,pct:100,color:'var(--blue)',change:'+4%'},
+  {name:'RDS PostgreSQL',cost:2140,pct:44,color:'var(--purple)',change:'+2%'},
+  {name:'ElastiCache',cost:980,pct:20,color:'var(--green)',change:'-1%'},
+  {name:'EC2 Workers',cost:1360,pct:28,color:'var(--amber)',change:'+8%'},
+  {name:'S3 + CloudFront',cost:420,pct:9,color:'var(--text-dim)',change:'-3%'},
+  {name:'CloudWatch',cost:310,pct:6,color:'var(--text-dim)',change:'+1%'},
+];
+
+const SLOs = [
+  {name:'api-gateway availability',current:99.98,target:99.9,status:'ok'},
+  {name:'scheduling-svc latency p95',current:71,target:99,status:'breach',unit:'%'},
+  {name:'auth-service availability',current:100,target:99.99,status:'ok'},
+  {name:'payroll-worker success rate',current:99.94,target:99.5,status:'ok'},
+  {name:'time-tracking-api p95 < 100ms',current:99.99,target:99.5,status:'ok'},
+];
+
+/* ═══════════════════════ STATE ═══════════════════════ */
+let currentTab = 'overview';
+let deployState = 'idle';
+let deployTimer = null;
+
+/* ═══════════════════════ TOASTS ═══════════════════════ */
+function showToast(icon, msg) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span class="toast-icon">${icon}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3000);
+}
+
+/* ═══════════════════════ SERVICE DETAIL ═══════════════════════ */
+function openServiceDetail(svc) {
+  const panel = document.getElementById('detailPanel');
+  const body = document.getElementById('detailBody');
+  document.getElementById('detailTitle').textContent = svc.name;
+  panel.classList.remove('collapsed');
+
+  const statusColor = svc.status === 'healthy' ? 'var(--green)' : svc.status === 'degraded' ? 'var(--red)' : 'var(--amber)';
+  const max = Math.max(...svc.spark);
+
+  body.innerHTML = `
+    <div class="dp-section">
+      <div class="dp-label">Live Metrics</div>
+      <div class="dp-kpi-grid">
+        <div class="dp-kpi">
+          <div class="dp-kpi-label">Uptime</div>
+          <div class="dp-kpi-val" style="color:${statusColor};font-size:16px">${svc.uptime}</div>
+        </div>
+        <div class="dp-kpi">
+          <div class="dp-kpi-label">p95 Latency</div>
+          <div class="dp-kpi-val" style="color:${svc.latencyMs>1000?'var(--red)':'var(--text)'};font-size:16px">${svc.latency}</div>
+        </div>
+        <div class="dp-kpi">
+          <div class="dp-kpi-label">Error Rate</div>
+          <div class="dp-kpi-val" style="color:${parseFloat(svc.errorRate)>0.5?'var(--red)':'var(--green)'};font-size:16px">${svc.errorRate}</div>
+        </div>
+        <div class="dp-kpi">
+          <div class="dp-kpi-label">Deploy Freq</div>
+          <div class="dp-kpi-val" style="font-size:16px">${svc.deployFreq}/wk</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-label">Latency — Last 1h</div>
+      <div class="dp-mini-chart">
+        ${svc.spark.map((v,i) => `<div class="dp-bar" style="height:${Math.max(4,(v/max)*100)}%;background:${svc.latencyMs>1000?'var(--red)':'var(--blue)'};opacity:${i===svc.spark.length-1?1:0.5+((v/max)*0.5)}"></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-label">Environment Status</div>
+      ${Object.entries(svc.envs).map(([env,s]) => `
+        <div class="dp-env-row">
+          <span class="dp-env-label">${env}</span>
+          <span class="dp-env-status" style="background:${s==='healthy'?'var(--green-dim)':s==='degraded'?'var(--red-dim)':'var(--amber-dim)'};color:${s==='healthy'?'var(--green)':s==='degraded'?'var(--red)':'var(--amber)'}">
+            ${s.toUpperCase()}
+          </span>
+        </div>`).join('')}
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-label">Quick Deploy</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">Deploy latest main to production</div>
+      <button class="deploy-btn" id="deployBtn" onclick="runDeploy('${svc.id}')">
+        <span id="deployIcon">▶</span> <span id="deployLabel">Deploy to Production</span>
+      </button>
+      <div id="rolloutWrap"></div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-label">Service Info</div>
+      <div class="dp-env-row"><span class="dp-env-label">Language</span><span style="font-family:var(--mono);font-size:11px;color:var(--text)">${svc.lang}</span></div>
+      <div class="dp-env-row"><span class="dp-env-label">Owner</span><span style="font-family:var(--mono);font-size:11px;color:var(--blue)">${svc.owner}</span></div>
+      <div class="dp-env-row"><span class="dp-env-label">p99 Latency</span><span style="font-family:var(--mono);font-size:11px;color:var(--text)">${svc.p99}</span></div>
+    </div>`;
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.add('collapsed');
+  deployState = 'idle';
+  if (deployTimer) clearTimeout(deployTimer);
+}
+
+/* ═══════════════════════ DEPLOY SIMULATION ═══════════════════════ */
+function runDeploy(svcId) {
+  if (deployState !== 'idle') return;
+  deployState = 'deploying';
+  const btn = document.getElementById('deployBtn');
+  const icon = document.getElementById('deployIcon');
+  const label = document.getElementById('deployLabel');
+  const wrap = document.getElementById('rolloutWrap');
+
+  btn.classList.add('deploying');
+  icon.textContent = '⏳';
+  label.textContent = 'Deploying…';
+
+  const stages = [
+    {label:'Run tests (412 specs)', key:'tests'},
+    {label:'Build Docker image', key:'build'},
+    {label:'Push to ECR', key:'push'},
+    {label:'Rolling update (ECS)', key:'ecs'},
+    {label:'Health check', key:'health'},
+    {label:'Smoke test', key:'smoke'},
+  ];
+
+  wrap.innerHTML = `
+    <div class="rollout-wrap">
+      <div class="rollout-title">⚙️ Rollout in progress</div>
+      ${stages.map(s => `
+        <div class="rollout-stage" id="stage-${s.key}">
+          <div class="rollout-icon" id="icon-${s.key}">⏸</div>
+          <div class="rollout-label">${s.label}</div>
+          <div class="rollout-bar-wrap"><div class="rollout-bar-fill" id="bar-${s.key}" style="width:0%"></div></div>
+          <div class="rollout-status" id="status-${s.key}" style="color:var(--text-dim)">—</div>
+        </div>`).join('')}
+    </div>`;
+
+  let i = 0;
+  const isFailing = svcId === 'scheduling-svc';
+
+  function runStage() {
+    if (i >= stages.length) return;
+    const s = stages[i];
+    document.getElementById('icon-'+s.key).textContent = '▶';
+    document.getElementById('status-'+s.key).textContent = 'running';
+    document.getElementById('status-'+s.key).style.color = 'var(--amber)';
+
+    let p = 0;
+    const dur = 600 + Math.random() * 800;
+    const interval = setInterval(() => {
+      p = Math.min(100, p + 8 + Math.random() * 12);
+      document.getElementById('bar-'+s.key).style.width = p + '%';
+      if (p >= 100) {
+        clearInterval(interval);
+        if (isFailing && i === 3) {
+          // Fail on ECS stage
+          document.getElementById('bar-'+s.key).style.background = 'var(--red)';
+          document.getElementById('icon-'+s.key).textContent = '✕';
+          document.getElementById('status-'+s.key).textContent = 'failed';
+          document.getElementById('status-'+s.key).style.color = 'var(--red)';
+          btn.classList.remove('deploying');
+          btn.classList.add('failed');
+          document.getElementById('deployIcon').textContent = '✕';
+          document.getElementById('deployLabel').textContent = 'Deploy Failed — rollback triggered';
+          deployState = 'idle';
+          showToast('🚨', 'Deploy failed: scheduling-svc health check timeout');
+          setTimeout(() => {
+            btn.classList.remove('failed');
+            document.getElementById('deployIcon').textContent = '▶';
+            document.getElementById('deployLabel').textContent = 'Deploy to Production';
+            deployState = 'idle';
+          }, 3000);
+          return;
+        }
+        document.getElementById('icon-'+s.key).textContent = '✓';
+        document.getElementById('status-'+s.key).textContent = 'done';
+        document.getElementById('status-'+s.key).style.color = 'var(--green)';
+        i++;
+        if (i < stages.length) deployTimer = setTimeout(runStage, 200);
+        else {
+          btn.classList.remove('deploying');
+          btn.classList.add('success-deploy');
+          document.getElementById('deployIcon').textContent = '✓';
+          document.getElementById('deployLabel').textContent = 'Deployed Successfully';
+          deployState = 'idle';
+          showToast('✅', `${svcId} deployed to production`);
+          setTimeout(() => {
+            btn.classList.remove('success-deploy');
+            document.getElementById('deployIcon').textContent = '▶';
+            document.getElementById('deployLabel').textContent = 'Deploy to Production';
+          }, 3000);
+        }
+      }
+    }, dur / 12);
+  }
+  runStage();
+}
+
+/* ═══════════════════════ SPARKLINES ═══════════════════════ */
+function buildSparkHTML(data, color) {
+  const max = Math.max(...data);
+  return data.map(v => `<div class="spark" style="height:${Math.max(3,(v/max)*100)}%;background:${color};opacity:${0.4+(v/max)*0.6}"></div>`).join('');
+}
+
+/* ═══════════════════════ VIEWS ═══════════════════════ */
+function renderOverview() {
+  return `
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Services Healthy</div>
+        <div class="stat-val" style="color:var(--green)">7/8</div>
+        <div class="stat-sub" style="color:var(--red)">1 degraded · scheduling-svc</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Deploy Frequency</div>
+        <div class="stat-val" style="color:var(--blue)">14</div>
+        <div class="stat-sub"><span style="color:var(--green)">↑ 28%</span> · deploys today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg CI Duration</div>
+        <div class="stat-val" style="color:var(--amber)">4m 12s</div>
+        <div class="stat-sub"><span style="color:var(--green)">↓ 35%</span> · vs last week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Incidents</div>
+        <div class="stat-val" style="color:var(--red)">1</div>
+        <div class="stat-sub"><span style="color:var(--amber)">SEV-2</span> · scheduling latency</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">CI/CD Pipelines</div><div class="panel-meta">Last 6 runs</div></div>
+        <div class="panel-body">
+          ${PIPELINES.map(p => {
+            const sc = p.status==='passed'?'var(--green)':p.status==='failed'?'var(--red)':'var(--amber)';
+            return `<div class="pipeline-row" onclick="showToast('🔗','Opening pipeline #${p.branch.split('#')[1]?.split(' ')[0]} logs')">
+              <div class="pipe-status" style="background:${sc}${p.status==='running'?';animation:pulse 1s ease-in-out infinite':''}"></div>
+              <div><div class="pipe-name">${p.name}</div><div class="pipe-branch">${p.branch}</div></div>
+              <div class="pipe-steps">
+                ${p.steps.map(s => `<div class="pipe-step" style="background:${s===1?'var(--green)':s===0?'var(--red)':s===0.5?'var(--amber)':'var(--border)'}"></div>`).join('')}
+              </div>
+              <div class="pipe-duration">${p.duration}</div>
+              <div class="pipe-badge" style="background:${p.bc};color:${p.tc}">${p.badge}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Active Incidents</div><div class="panel-meta" style="color:var(--red)">1 open</div></div>
+        <div class="panel-body">
+          <div class="incident-row" style="border-color:rgba(248,113,113,0.2)">
+            <div class="inc-header">
+              <div class="inc-sev" style="background:var(--amber-dim);color:var(--amber)">SEV-2</div>
+              <div class="inc-title">scheduling-svc latency elevated</div>
+              <div class="inc-time">14m ago</div>
+            </div>
+            <div class="inc-body">P95 at 2.8s, SLO 1.2s. Suspect N+1 query in shift overlap check (#934). 3 engineers paged.</div>
+            <div class="inc-actions">
+              <button class="inc-btn primary" onclick="showToast('📖','Opening runbook: scheduling-latency-playbook')">Runbook</button>
+              <button class="inc-btn" onclick="showToast('🔕','Alert silenced for 30 minutes')">Silence</button>
+              <button class="inc-btn success" onclick="resolveIncident(this)">Resolve</button>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="font-size:10px;font-weight:600;color:var(--text-dim);margin-bottom:8px;letter-spacing:0.06em;text-transform:uppercase">Resolved</div>
+            <div class="incident-row" style="opacity:0.55">
+              <div class="inc-header">
+                <div class="inc-sev" style="background:rgba(255,255,255,0.05);color:var(--text-dim)">SEV-3</div>
+                <div class="inc-title">payroll-worker queue depth spike</div>
+                <div class="inc-time" style="color:var(--green)">✓ 2h ago</div>
+              </div>
+              <div class="inc-body">Auto-scaled worker fleet. Resolved in 18m.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Service Health</div><div class="panel-meta">Click a service for details + deploy</div></div>
+        <div class="panel-body">
+          ${SERVICES.map(s => {
+            const sc = s.status==='healthy'?'var(--green)':s.status==='degraded'?'var(--red)':'var(--amber)';
+            return `<div class="service-row" onclick="openServiceDetail(SERVICES.find(x=>x.id==='${s.id}'))">
+              <div class="svc-sparkline">${buildSparkHTML(s.spark, sc)}</div>
+              <div style="flex:1"><div class="svc-name">${s.name}</div><div class="svc-owner">${s.owner} · ${s.lang}</div></div>
+              <div class="svc-uptime" style="color:${sc}">${s.uptime}</div>
+              <div class="svc-latency" style="color:${s.latencyMs>1000?'var(--red)':'var(--text-mid)'}">${s.latency}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Recent Deploys</div><div class="panel-meta">production</div></div>
+          <div class="panel-body">
+            ${[
+              {icon:'✅',svc:'api-gateway v2.14.1',detail:'main@a4f2c9b · 0 errors',who:'@marcus',time:'8m ago'},
+              {icon:'✅',svc:'time-tracking v1.8.4',detail:'main@b8e1d4f · 0 errors',who:'@priya',time:'23m ago'},
+              {icon:'⚠️',svc:'scheduling-svc v3.2.1',detail:'feat/shift-overlap · latency↑',who:'@james',time:'41m ago'},
+              {icon:'✅',svc:'payroll-worker v4.1.0',detail:'main@f1c3a8b · 0 errors',who:'@sarah.k',time:'1h 12m'},
+            ].map(d => `<div class="deploy-entry">
+              <div class="deploy-icon">${d.icon}</div>
+              <div style="flex:1"><div class="deploy-service">${d.svc}</div><div class="deploy-detail">${d.detail}</div></div>
+              <div style="text-align:right"><div class="deploy-who">${d.who}</div><div class="deploy-time">${d.time}</div></div>
+            </div>`).join('')}
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">On-Call</div><div class="panel-meta">this week</div></div>
+          <div class="panel-body">
+            ${[
+              {initials:'SK',grad:'#34D399,#0EA5C9',name:'Sarah Kim',now:true,team:'Platform · primary',shift:'Mon–Wed'},
+              {initials:'MR',grad:'#A78BFA,#60A5FA',name:'Marcus Rivera',now:false,team:'Core · secondary',shift:'Mon–Wed'},
+              {initials:'JP',grad:'#FBBF24,#F97316',name:'James Park',now:false,team:'Mobile · primary',shift:'Thu–Sun'},
+            ].map(o => `<div class="oncall-row">
+              <div class="oncall-avatar" style="background:linear-gradient(135deg,${o.grad})">${o.initials}</div>
+              <div style="flex:1"><div class="oncall-name">${o.name} ${o.now?'<span style="font-size:10px;color:var(--green);font-weight:600">● NOW</span>':''}</div><div class="oncall-team">${o.team}</div></div>
+              <div class="oncall-shift">${o.shift}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderServices() {
+  return `
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">All Services</div><div class="panel-meta">Click any service to inspect + deploy</div></div>
+      <div class="panel-body">
+        ${SERVICES.map(s => {
+          const sc = s.status==='healthy'?'var(--green)':s.status==='degraded'?'var(--red)':'var(--amber)';
+          return `<div class="service-row" onclick="openServiceDetail(SERVICES.find(x=>x.id==='${s.id}'))">
+            <div class="svc-sparkline">${buildSparkHTML(s.spark, sc)}</div>
+            <div style="flex:1"><div class="svc-name">${s.name}</div><div class="svc-owner">${s.owner} · ${s.lang}</div></div>
+            <div class="svc-uptime" style="color:${sc}">${s.uptime}</div>
+            <div class="svc-latency" style="color:${s.latencyMs>1000?'var(--red)':'var(--text-mid)'}">${s.latency}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);min-width:60px;text-align:right">${s.errorRate} err</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function renderPipelines() {
+  return `
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Passing</div><div class="stat-val" style="color:var(--green)">4</div><div class="stat-sub">of 6 pipelines</div></div>
+      <div class="stat-card"><div class="stat-label">Failing</div><div class="stat-val" style="color:var(--red)">1</div><div class="stat-sub">scheduling-svc</div></div>
+      <div class="stat-card"><div class="stat-label">Running</div><div class="stat-val" style="color:var(--amber)">1</div><div class="stat-sub">auth-service</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Duration</div><div class="stat-val" style="color:var(--blue)">4m 12s</div><div class="stat-sub">↓ 35% this week</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">CI/CD Pipelines</div><div class="panel-meta">GitHub Actions · All branches</div></div>
+      <div class="panel-body">
+        ${PIPELINES.map(p => {
+          const sc = p.status==='passed'?'var(--green)':p.status==='failed'?'var(--red)':'var(--amber)';
+          return `<div class="pipeline-row" onclick="showToast('🔗','Opening GitHub Actions log for ${p.name}')">
+            <div class="pipe-status" style="background:${sc}${p.status==='running'?';animation:pulse 1s ease-in-out infinite':''}"></div>
+            <div style="flex:1"><div class="pipe-name">${p.name}</div><div class="pipe-branch">${p.branch}</div></div>
+            <div class="pipe-steps">
+              ${p.steps.map(s => `<div class="pipe-step" style="background:${s===1?'var(--green)':s===0?'var(--red)':s===0.5?'var(--amber)':'var(--border)'}"></div>`).join('')}
+            </div>
+            <div class="pipe-duration">${p.duration}</div>
+            <div class="pipe-badge" style="background:${p.bc};color:${p.tc}">${p.badge}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function renderIncidents() {
+  return `
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Incident Management</div><div class="panel-meta" style="color:var(--red)">1 active</div></div>
+      <div class="panel-body">
+        <div class="incident-row" style="border-color:rgba(248,113,113,0.2)">
+          <div class="inc-header">
+            <div class="inc-sev" style="background:var(--amber-dim);color:var(--amber)">SEV-2</div>
+            <div class="inc-title">scheduling-svc P95 latency elevated</div>
+            <div class="inc-time">14m ago</div>
+          </div>
+          <div class="inc-body">P95 at 2.8s, SLO threshold 1.2s. Affects shift assignment endpoint. Root cause: suspect N+1 query on shift overlap check introduced in #934. 3 engineers paged. Rollback available.</div>
+          <div class="inc-actions">
+            <button class="inc-btn primary" onclick="showToast('📖','Opening: scheduling-latency-playbook.md')">Open Runbook</button>
+            <button class="inc-btn danger" onclick="showToast('⏪','Rollback initiated — deploying v3.1.9')">Rollback</button>
+            <button class="inc-btn" onclick="showToast('📢','Escalating to @engineering-leads')">Escalate</button>
+            <button class="inc-btn success" onclick="resolveIncident(this)">Mark Resolved</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">Incident History — Last 30d</div></div>
+      <div class="panel-body">
+        ${[
+          {sev:'SEV-3',title:'payroll-worker queue depth spike',time:'2h ago',duration:'18m',status:'resolved'},
+          {sev:'SEV-2',title:'auth-service elevated error rate',time:'3d ago',duration:'42m',status:'resolved'},
+          {sev:'SEV-3',title:'notification-svc delivery delays',time:'8d ago',duration:'11m',status:'resolved'},
+          {sev:'SEV-1',title:'api-gateway total outage (us-east-1)',time:'14d ago',duration:'6m',status:'resolved'},
+        ].map(i => `<div class="deploy-entry">
+          <div class="deploy-icon">${i.status==='resolved'?'✅':'🔴'}</div>
+          <div style="flex:1">
+            <div class="deploy-service">${i.title}</div>
+            <div class="deploy-detail">${i.sev} · Duration: ${i.duration}</div>
+          </div>
+          <div class="deploy-time">${i.time}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderCosts() {
+  const total = AWS_COSTS.reduce((s,c) => s+c.cost, 0);
+  return `
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">MTD Spend</div><div class="stat-val" style="color:var(--blue)">$${(total/1000).toFixed(1)}k</div><div class="stat-sub"><span style="color:var(--amber)">↑ 4%</span> vs last month</div></div>
+      <div class="stat-card"><div class="stat-label">Projected Monthly</div><div class="stat-val" style="color:var(--text)">$${(total*1.15/1000).toFixed(0)}k</div><div class="stat-sub">based on current trend</div></div>
+      <div class="stat-card"><div class="stat-label">Largest Driver</div><div class="stat-val" style="color:var(--purple);font-size:18px">ECS</div><div class="stat-sub">$4.8k · 48% of total</div></div>
+      <div class="stat-card"><div class="stat-label">Savings Opportunities</div><div class="stat-val" style="color:var(--green)">$380</div><div class="stat-sub">reserved instances · EC2</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">AWS Cost Breakdown — MTD</div><div class="panel-meta">ca-central-1 + us-east-1</div></div>
+      <div class="panel-body">
+        ${AWS_COSTS.map(c => `<div class="cost-row">
+          <div class="cost-service">${c.name}</div>
+          <div class="cost-bar-wrap"><div class="cost-bar-fill" style="width:${c.pct}%;background:${c.color}"></div></div>
+          <div class="cost-val" style="color:${c.color}">$${c.cost.toLocaleString()}</div>
+          <div class="cost-change" style="color:${c.change.startsWith('-')?'var(--green)':'var(--amber)'}">${c.change}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">SLO Burn Rate</div><div class="panel-meta">30d rolling window</div></div>
+      <div class="panel-body">
+        ${SLOs.map(s => `<div class="slo-row">
+          <div class="slo-name">${s.name}</div>
+          <div class="slo-track">
+            <div class="slo-fill" style="width:${s.current}%;background:${s.status==='ok'?'var(--green)':'var(--red)'}"></div>
+            <div class="slo-target"></div>
+          </div>
+          <div class="slo-val" style="color:${s.status==='ok'?'var(--green)':'var(--red)'}">${s.current}%</div>
+          <div class="slo-badge" style="background:${s.status==='ok'?'var(--green-dim)':'var(--red-dim)'};color:${s.status==='ok'?'var(--green)':'var(--red)'}">
+            ${s.status==='ok'?'ON TRACK':'BREACH'}
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderSlo() {
+  return renderCosts();
+}
+
+function renderOncall() {
+  return `
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title">On-Call Schedule</div><div class="panel-meta">Aug 17 – Aug 24, 2026</div></div>
+      <div class="panel-body">
+        ${[
+          {initials:'SK',grad:'#34D399,#0EA5C9',name:'Sarah Kim',now:true,team:'Platform · primary',shift:'Mon–Wed · 09:00–18:00 EST',phone:'+1 (416) 555-0142'},
+          {initials:'MR',grad:'#A78BFA,#60A5FA',name:'Marcus Rivera',now:true,team:'Core · secondary',shift:'Mon–Wed · backup',phone:'+1 (647) 555-0198'},
+          {initials:'JP',grad:'#FBBF24,#F97316',name:'James Park',now:false,team:'Mobile · primary',shift:'Thu–Sun · 09:00–18:00 EST',phone:'+1 (416) 555-0211'},
+          {initials:'PL',grad:'#F87171,#FB923C',name:'Priya Lee',now:false,team:'Growth · secondary',shift:'Thu–Sun · backup',phone:'+1 (647) 555-0334'},
+        ].map(o => `<div class="oncall-row">
+          <div class="oncall-avatar" style="background:linear-gradient(135deg,${o.grad})">${o.initials}</div>
+          <div style="flex:1">
+            <div class="oncall-name">${o.name} ${o.now?'<span style="font-size:10px;color:var(--green);font-weight:600">● ACTIVE</span>':''}</div>
+            <div class="oncall-team">${o.team}</div>
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:2px">${o.shift}</div>
+          </div>
+          <button class="inc-btn" onclick="showToast('📞','Paging ${o.name} via PagerDuty')"  style="font-size:10px">Page</button>
+        </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ═══════════════════════ INCIDENT RESOLVE ═══════════════════════ */
+function resolveIncident(btn) {
+  btn.textContent = '✓ Resolved';
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  showToast('✅', 'Incident resolved — post-mortem template created');
+}
+
+/* ═══════════════════════ TAB SWITCHING ═══════════════════════ */
+const VIEW_MAP = {
+  overview: renderOverview,
+  services: renderServices,
+  pipelines: renderPipelines,
+  incidents: renderIncidents,
+  costs: renderCosts,
+  slo: renderSlo,
+  oncall: renderOncall,
+};
+
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.tnav').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  closeDetail();
+  const c = document.getElementById('mainContent');
+  c.innerHTML = `<div class="anim-in">${(VIEW_MAP[tab]||renderOverview)()}</div>`;
+}
+
+function switchSidebar(el, tab) {
+  document.querySelectorAll('.slink').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  switchTab(tab, null);
+  document.querySelectorAll('.tnav').forEach((t,i) => {
+    const tabs = ['overview','services','pipelines','incidents','costs'];
+    if (tabs[i] === tab) t.classList.add('active');
+  });
+}
+
+/* INIT */
+switchTab('overview', document.querySelector('.tnav.active'));
+</script>
+</body>
+</html>
